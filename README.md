@@ -1,19 +1,36 @@
-# 🎈 Blank app template
-
-A simple Streamlit app template for you to modify!
-
-[![Open in Streamlit](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://blank-app-template.streamlit.app/)
-
-### How to run it on your own machine
-
-1. Install the requirements
 
    ```
-   $ pip install -r requirements.txt
-   ```
+import streamlit as st
+import yfinance as yf
+import plotly.graph_objects as go
 
-2. Run the app
+# Configuração da página
+st.set_page_config(page_title="Global Stock Tracker", layout="wide")
 
-   ```
-   $ streamlit run streamlit_app.py
-   ```
+st.title("📊 Monitor de Bolsa Mundial")
+ticker = st.text_input("Digite o código da ação (Ex: AAPL, PETR4.SA, TSLA):", "AAPL")
+
+# Busca os dados
+data = yf.Ticker(ticker)
+hist = data.history(period="1mo")
+
+if not hist.empty:
+    # Cabeçalho com preço atual
+    current_price = hist['Close'].iloc[-1]
+    change = current_price - hist['Close'].iloc[-2]
+    
+    st.metric(label=f"Preço Atual ({ticker})", value=f"${current_price:.2f}", delta=f"{change:.2f}")
+
+    # Gráfico Interativo
+    fig = go.Figure(data=[go.Candlestick(x=hist.index,
+                open=hist['Open'], high=hist['High'],
+                low=hist['Low'], close=hist['Close'])])
+    
+    fig.update_layout(title=f"Histórico de 30 dias - {ticker}", template="plotly_dark")
+    st.plotly_chart(fig, use_container_width=True)
+    
+    # Informações da Empresa
+    st.subheader("Sobre a Empresa")
+    st.write(data.info.get('longBusinessSummary', 'Informação não disponível.'))
+else:
+    st.error("Ticker não encontrado. Tente 'AAPL' para Apple ou 'PETR4.SA' para Petrobras.")
